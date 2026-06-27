@@ -1,0 +1,14 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.7.0+cpu
+fastapi
+uvicorn
+pandas
+scikit-learn
+joblib
+pydantic
+pydantic-settings
+boto3
+dvc
+dvc-s3
+mlflow
+pillow

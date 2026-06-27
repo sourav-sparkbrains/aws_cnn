@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Virtual environment
+venv/
+.venv/
+
+# Data — never push raw data to GitHub
+data/raw/
+data/processed/
+
+# DVC
+.dvc/cache/
+
+# MLflow
+mlruns/
+
+# Model files
+*.pt
+*.pth
+*.pkl
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.idea/
+.vscode/
+
+# AWS
+.aws/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# MLflow
+mlflow.db

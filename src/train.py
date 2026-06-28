@@ -1,14 +1,19 @@
+import os
 import torch
 import mlflow
+import argparse
 import torchvision.transforms as transforms
 
 from torch import nn
+from dotenv import load_dotenv
 from torch.utils.data import DataLoader, random_split
 from sklearn.metrics import f1_score, classification_report
 
 from src.model import XRAYNet
 from src.config import settings
 from src.dataset import XRAYDataset
+
+load_dotenv()
 
 def load_data():
     transform = transforms.Compose([
@@ -18,9 +23,10 @@ def load_data():
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
 
-    return XRAYDataset(settings.RAW_DATA_DIR,transform)
+    data_path = os.getenv('SM_CHANNEL_TRAIN', str(settings.RAW_DATA_DIR))
+    return XRAYDataset(data_path,transform)
 
-def get_dataloader(train_dataset, test_dataset, batch_size: int = settings.BATCH_SIZE):
+def get_dataloader(train_dataset, test_dataset, batch_size):
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     return train_loader, test_loader
@@ -75,13 +81,19 @@ def evaluate_model(model, test_loader, device):
     print(classification_report(labels_np, preds_np))
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--epochs', type=int, default=settings.EPOCHS)
+    parser.add_argument('--batch_size', type=int, default=settings.BATCH_SIZE)
+    parser.add_argument('--learning_rate', type=float, default=settings.LEARNING_RATE)
+    args = parser.parse_args()
+
     dataset = load_data()
 
     train_size = int(len(dataset) * settings.TRAIN_SIZE)
     test_size = len(dataset) - train_size
     train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
-    train_loader, test_loader = get_dataloader(train_dataset, test_dataset)
+    train_loader, test_loader = get_dataloader(train_dataset, test_dataset, batch_size=args.batch_size)
 
     mlflow.set_experiment(settings.EXPERIMENT_NAME)
     with mlflow.start_run(run_name=settings.RUN_NAME):
@@ -90,13 +102,15 @@ if __name__ == "__main__":
         model = XRAYNet()
         model.to(device)
         criterion = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=settings.LEARNING_RATE)
-        epochs = settings.EPOCHS
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+        epochs = args.epochs
 
-        mlflow.log_param("learning_rate", settings.LEARNING_RATE)
-        mlflow.log_param("batch_size", settings.BATCH_SIZE)
-        mlflow.log_param("epochs", settings.EPOCHS)
+        mlflow.log_param("learning_rate", args.learning_rate)
+        mlflow.log_param("batch_size", args.batch_size)
+        mlflow.log_param("epochs", args.epochs)
 
         train_model(model, train_loader, criterion, optimizer, epochs, device)
         evaluate_model(model, test_loader, device)
         mlflow.pytorch.log_model(model, "model")
+        model_dir = os.getenv('SM_MODEL_DIR', '.')
+        torch.save(model.state_dict(), os.path.join(model_dir, 'model.pt'))

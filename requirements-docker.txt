@@ -1,14 +1,10 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.7.0+cpu
+torchvision==0.22.0+cpu
 fastapi
 uvicorn
-pandas
-scikit-learn
-joblib
-pydantic
+python-multipart
+Pillow
 pydantic-settings
-boto3
-dvc
-dvc-s3
-mlflow
-pillow
+python-dotenv
+scikit-learn

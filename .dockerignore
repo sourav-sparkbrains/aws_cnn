@@ -18,6 +18,7 @@ data/processed/
 
 # DVC
 .dvc/cache/
+.dvc/config.local
 
 # MLflow
 mlflow.db
